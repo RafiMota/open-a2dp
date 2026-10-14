@@ -16,6 +16,13 @@
 extern "C" {
 #endif
 
+/* COM pointers are opaque to the C parts (ring.c, control.cpp). */
+#ifdef __cplusplus
+#define OA2DP_UNKNOWN PUNKNOWN
+#else
+#define OA2DP_UNKNOWN PVOID
+#endif
+
 #define OA2DP_AUDIO_TAG 'dA2O'
 
 /* KS subdevice names; must match the reference strings in oa2dpaudio.inf. */
@@ -75,8 +82,8 @@ typedef struct _OA2DP_AUDIO_DEVICE {
 
     /* KS filters (PortCls subdevices). */
     KEVENT FilterLock;          /* PASSIVE_LEVEL lock, used as a mutex */
-    PUNKNOWN WavePort;
-    PUNKNOWN TopoPort;
+    OA2DP_UNKNOWN WavePort;
+    OA2DP_UNKNOWN TopoPort;
     PVOID WaveMiniport;         /* CMiniportWaveRT *, referenced */
     volatile LONG Streams;      /* open WaveRT streams */
     BOOLEAN NameChanged;        /* re-register the filters when idle */
@@ -99,7 +106,7 @@ VOID Oa2dpRingSetRunning(_Inout_ OA2DP_AUDIO_RING *r, _In_ BOOLEAN running);
 /* Copy `frames` frames of the WaveRT cyclic buffer, starting at byte offset
  * `pos`, into the ring. `bits` is the container: 32 = IEEE float, 16/24 =
  * PCM (converted to 24-bit values in int32, OA2DP_RING_FMT_S32). */
-VOID Oa2dpRingPump(_Inout_ OA2DP_AUDIO_RING *r, _In_reads_bytes_(cyclicBytes) const BYTE *cyclic,
+VOID Oa2dpRingPump(_Inout_ OA2DP_AUDIO_RING *r, _In_reads_bytes_(cyclicBytes) const UCHAR *cyclic,
                    _In_ ULONG cyclicBytes, _In_ ULONG pos, _In_ ULONG frames, _In_ USHORT channels,
                    _In_ USHORT bits);
 

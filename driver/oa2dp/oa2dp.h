@@ -18,7 +18,6 @@
 #include <bthdef.h>
 #include <bthguid.h>
 #include <bthioctl.h>
-#include <sdpnodetypes.h>
 #include <bthddi.h>
 
 #include "../common/oa2dp_ioctl.h"

@@ -161,7 +161,7 @@ VOID Oa2dpRingSetRunning(_Inout_ OA2DP_AUDIO_RING *r, _In_ BOOLEAN running)
     KeReleaseSpinLock(&r->Lock, irql);
 }
 
-static VOID ConvertToS24(_Out_writes_(samples) int32_t *dst, _In_ const BYTE *src,
+static VOID ConvertToS24(_Out_writes_(samples) int32_t *dst, _In_ const UCHAR *src,
                          _In_ ULONG samples, _In_ USHORT bits)
 {
     ULONG i;
@@ -179,7 +179,7 @@ static VOID ConvertToS24(_Out_writes_(samples) int32_t *dst, _In_ const BYTE *sr
 /* DISPATCH_LEVEL (stream timer). Drops audio when the stream format does not
  * match the ring header, which only happens while a format change races a
  * closing stream. */
-VOID Oa2dpRingPump(_Inout_ OA2DP_AUDIO_RING *r, _In_reads_bytes_(cyclicBytes) const BYTE *cyclic,
+VOID Oa2dpRingPump(_Inout_ OA2DP_AUDIO_RING *r, _In_reads_bytes_(cyclicBytes) const UCHAR *cyclic,
                    _In_ ULONG cyclicBytes, _In_ ULONG pos, _In_ ULONG frames, _In_ USHORT channels,
                    _In_ USHORT bits)
 {

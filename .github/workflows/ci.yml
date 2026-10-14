@@ -27,6 +27,13 @@ jobs:
       - name: Build service, tool and run encoder tests
         shell: bash
         run: ZIG=zig sh scripts/zig-build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: user-mode-x64
+          path: |
+            build/zig/oa2dpsvc.exe
+            build/zig/oa2dpctl.exe
+            build/zig/oa2dpgui.exe
 
   # Kernel drivers with MSVC + WDK (both preinstalled on the windows-2022
   # image). Produces unsigned oa2dp.sys / oa2dpaudio.sys + INFs as an artifact.
@@ -58,14 +65,25 @@ jobs:
             Sort-Object FullName | Select-Object -Last 1
           if (-not $iv) { $iv = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x86\infverif.exe" | Sort-Object FullName | Select-Object -Last 1 }
           & $iv.FullName /w driver\oa2dp\oa2dp.inf driver\oa2dpaudio\oa2dpaudio.inf
-      - name: Collect
+      - name: Package (one folder per driver, unsigned catalog)
         if: success() || failure()
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force out/drivers | Out-Null
-          Get-ChildItem build/drv/Release -Include *.sys,*.pdb -Recurse -ErrorAction SilentlyContinue |
-            Copy-Item -Destination out/drivers
-          Copy-Item driver/oa2dp/oa2dp.inf, driver/oa2dpaudio/oa2dpaudio.inf out/drivers
+          $kits = "${env:ProgramFiles(x86)}\Windows Kits\10\bin"
+          $inf2cat = Get-ChildItem "$kits\*\x86\Inf2Cat.exe" | Sort-Object FullName | Select-Object -Last 1
+          foreach ($d in @(@{n='oa2dp'; os='10_RS5_X64,10_VB_X64,10_CO_X64,10_NI_X64,10_GE_X64'},
+                           @{n='oa2dpaudio'; os='10_VB_X64,10_CO_X64,10_NI_X64,10_GE_X64'})) {
+            $dst = "out/drivers/$($d.n)"
+            New-Item -ItemType Directory -Force $dst | Out-Null
+            Copy-Item "driver/$($d.n)/$($d.n).inf" $dst
+            Get-ChildItem "build/drv/Release/$($d.n).sys", "build/drv/Release/$($d.n).pdb" -ErrorAction SilentlyContinue |
+              Copy-Item -Destination $dst
+            if (Test-Path "$dst/$($d.n).sys") {
+              & $inf2cat.FullName "/driver:$((Resolve-Path $dst).Path)" "/os:$($d.os)" /uselocaltime
+              if ($LASTEXITCODE -ne 0) { Write-Host "::warning::Inf2Cat failed for $($d.n)" }
+            }
+          }
+          Get-ChildItem -Recurse out/drivers | ForEach-Object { $_.FullName }
       - uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
