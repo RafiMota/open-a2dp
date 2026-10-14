@@ -133,6 +133,9 @@ if(OA2DP_BUILD_DRIVERS)
         driver/oa2dpaudio/ring.c
         core/src/pcm_ring.c)
     target_include_directories(oa2dpaudio PRIVATE core/include driver/common)
-    target_compile_definitions(oa2dpaudio PRIVATE PC_IMPLEMENTATION UNICODE _UNICODE)
+    # _NEW_DELETE_OPERATORS_: we supply new/delete (newdelete.cpp), so the
+    # WDK's stdunk.h must not define its own (as in SYSVAD).
+    target_compile_definitions(oa2dpaudio PRIVATE PC_IMPLEMENTATION UNICODE _UNICODE
+        _NEW_DELETE_OPERATORS_)
     target_link_libraries(oa2dpaudio WDK::PORTCLS WDK::STDUNK WDK::LIBCNTPR)
 endif()
