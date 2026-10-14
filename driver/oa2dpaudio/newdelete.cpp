@@ -16,7 +16,8 @@
  * Derived from the SYSVAD sample (Windows-driver-samples/audio/sysvad,
  * commit 2dc3fd3a, MS-PL — see LICENSE.MS-PL in this folder). Modified for
  * OpenA2DP: plain ExFreePool in delete, a matching placement delete; no
- * (size, flags) overload, which would collide with sized delete on 64-bit.
+ * (size, flags) overload, which would collide with sized delete on 64-bit;
+ * the plain operator delete(void*) comes from the WDK's stdunk.lib.
  */
 extern "C" {
 #include <wdm.h>
@@ -38,12 +39,6 @@ void __cdecl operator delete(PVOID pVoid, POOL_FLAGS poolFlags, ULONG tag)
 {
     UNREFERENCED_PARAMETER(poolFlags);
     UNREFERENCED_PARAMETER(tag);
-    if (pVoid)
-        ExFreePool(pVoid);
-}
-
-void __cdecl operator delete(_Pre_maybenull_ __drv_freesMem(Mem) PVOID pVoid)
-{
     if (pVoid)
         ExFreePool(pVoid);
 }
