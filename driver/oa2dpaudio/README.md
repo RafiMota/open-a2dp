@@ -1,7 +1,7 @@
 # oa2dpaudio.sys — virtual render endpoint
 
-**Status: sources complete, consistent with the service; not yet compiled
-or run.**
+**Status: builds (WDK 10.0.26100, CI) and its catalog passes Inf2Cat; not
+yet run on hardware.**
 
 Each headset served by `oa2dp.sys` gets a child device `OA2DP\Render\<address>`.
 This driver loads on it and shows Windows a normal "Headphones" render
@@ -101,8 +101,8 @@ The service validates the header against the mapping size
 
 ## Open points
 
-- Not compiled yet. Building needs Visual Studio 2022 with the C++ tools,
-  the Windows SDK and the WDK of the same version (see `BUILDING.md`).
+- Not run yet: Driver Verifier and a real headset are the next step
+  (`scripts/install-dev.ps1`, see `BUILDING.md`).
 - Whether `IoSetDevicePropertyData(DEVPKEY_Device_FriendlyName)` is
   accepted for the PDO has to be checked on a real system; a failure is
   logged and ignored (the endpoint then shows the INF description).

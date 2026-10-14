@@ -35,7 +35,7 @@ status: [docs/SPEC.md](docs/SPEC.md).
 | `tools/oa2dpgui/` | The same as a small Win32 window: headset list, driver switch, codec settings with live SBC bitrate, status bar. |
 | `tools/common/` | Device and registry logic shared by both tools. |
 | `driver/oa2dp/` | KMDF Bluetooth profile driver (L2CAP transport) + INF. |
-| `driver/oa2dpaudio/` | Virtual render endpoint: PortCls/WaveRT miniport derived from SYSVAD (MS-PL), ring producer, control IOCTLs. Not yet compiled. |
+| `driver/oa2dpaudio/` | Virtual render endpoint: PortCls/WaveRT miniport derived from SYSVAD (MS-PL), ring producer, control IOCTLs. Builds in CI; not yet run. |
 
 ## Quick start (developers)
 

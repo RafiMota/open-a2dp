@@ -27,19 +27,23 @@ refer to [SPEC.md](SPEC.md).
   live status wait for the drivers.
 - **oa2dp.sys**: KMDF profile driver source + INF (L2CAP open/accept/close,
   send/receive, TX queue stats, audio child PDO with a unique instance ID).
-  Not yet compiled.
+  Builds in CI; not yet run.
 - **oa2dpaudio.sys** (F4.1, F4.2): PortCls/WaveRT render endpoint derived
   from SYSVAD's simple render endpoint, INF for `OA2DP\Render`, CMake target.
   Formats from the service, ring pump, WAIT_FORMAT on stream start/stop and
   format change, latency in `GetHWLatency` and the presentation position,
-  friendly name, control interface on the PDO. Not yet compiled.
+  friendly name, control interface on the PDO. Builds in CI; not yet run.
+- **CI** (GitHub Actions): core tests with sanitizers, zig user-mode build,
+  both drivers with MSVC + WDK, Inf2Cat catalogs; driver and user-mode
+  binaries as artifacts. `scripts/install-dev.ps1` test-signs and installs
+  them on a development machine.
 
 ## Next
 
-1. **Build `oa2dp.sys` and `oa2dpaudio.sys` with the WDK** (needs Visual
-   Studio 2022 + Windows SDK + WDK of the same version) and fix whatever the
-   compiler, Driver Verifier and Static Driver Verifier report. Test-sign,
-   bind to one headset, run `oa2dpsvc --console`, confirm
+1. **First run on hardware.** Both drivers now compile (CI, WDK 10.0.26100)
+   and their catalogs pass Inf2Cat; nothing has run yet. Test-sign and
+   install with `scripts/install-dev.ps1`, run Driver Verifier on both
+   drivers, bind to one headset, run `oa2dpsvc --console`, confirm
    DISCOVER/GET_CAPABILITIES against a real headset (signalling works before
    any audio exists), then check that the endpoint appears with the
    headset's name and that the service maps the ring.

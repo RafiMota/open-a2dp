@@ -54,18 +54,40 @@ cmake -S . -B build/drv -G "Visual Studio 17 2022" -A x64 -DOA2DP_BUILD_DRIVERS=
 cmake --build build/drv --config Release --target oa2dp oa2dpaudio
 ```
 
-Neither driver has been compiled yet; expect a first round of fixes.
-`oa2dpaudio.inf` needs Windows 10 2004 or later.
+Both drivers build with WDK 10.0.26100 (MSVC 2022, FindWDK); the
+`drivers` job in `.github/workflows/ci.yml` does exactly this on
+`windows-2022` and runs Inf2Cat. `oa2dpaudio.inf` needs Windows 10 2004 or
+later.
 
-### Test signing (development machines only)
+### Without a local toolchain: CI artifacts
 
+Every push builds two artifacts: `drivers-x64` (`oa2dp\` and `oa2dpaudio\`
+folders with `.sys`, `.inf` and an unsigned `.cat`) and `user-mode-x64`
+(`oa2dpsvc.exe`, `oa2dpctl.exe`, `oa2dpgui.exe`, codecs linked in).
+
+```bash
+gh run download <run-id> -D dist
 ```
-bcdedit /set testsigning on        (reboot)
-makecert / New-SelfSignedCertificate -> sign oa2dp.sys and oa2dp.cat
-pnputil /add-driver driver\oa2dp\oa2dp.inf
-pnputil /add-driver driver\oa2dpaudio\oa2dpaudio.inf
-oa2dpctl use <dev>
-```
+
+### Test install (development machines only)
+
+1. Turn **Secure Boot off** in the firmware setup (test-signed drivers do
+   not load with it on). If BitLocker protects the system drive, suspend it
+   first (`manage-bde -protectors -disable C: -RebootCount 2`) or have the
+   recovery key at hand.
+2. From an elevated prompt: `bcdedit /set testsigning on`, then reboot.
+3. From an elevated PowerShell in the repository:
+   `.\scripts\install-dev.ps1` — creates and trusts a local test
+   certificate, signs the drivers and catalogs from `dist\`, adds both
+   packages to the driver store, installs the service and tools to
+   `%ProgramFiles%\OpenA2DP` and starts the service.
+4. `oa2dpctl list`, then `oa2dpctl use <n>` (or the GUI) switches one
+   headset to OpenA2DP. The service log is
+   `%ProgramData%\OpenA2DP\oa2dpsvc.log`.
+
+`.\scripts\install-dev.ps1 -Uninstall` restores Windows' driver on every
+headset and removes the service, the packages and the certificate; then
+`bcdedit /set testsigning off` and Secure Boot back on.
 
 For end users the drivers must be **attestation-signed** through the
 Microsoft Partner Center (needs an EV code-signing certificate). That is a

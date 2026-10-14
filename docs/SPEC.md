@@ -51,8 +51,8 @@ written and compiled where possible, not yet run end-to-end with a headset ·
 
 | ID | Requirement | Status |
 |----|-------------|--------|
-| F4.1 | Each connected headset appears as a Windows render endpoint with its own friendly name. | 🟡 driver written (`oa2dpaudio.sys`: endpoint per `OA2DP\Render\<address>`, name from `IOCTL_OA2DP_AUDIO_SET_NAME`) · not yet built or run |
-| F4.2 | The endpoint advertises the formats the negotiated codec accepts; Windows mixes into one of them. | 🟡 service side · 🟡 driver side written (format list from `IOCTL_OA2DP_AUDIO_SET_FORMATS`, float32 preferred), not yet built or run |
+| F4.1 | Each connected headset appears as a Windows render endpoint with its own friendly name. | 🟡 driver written (`oa2dpaudio.sys`: endpoint per `OA2DP\Render\<address>`, name from `IOCTL_OA2DP_AUDIO_SET_NAME`) · builds in CI, not yet run |
+| F4.2 | The endpoint advertises the formats the negotiated codec accepts; Windows mixes into one of them. | 🟡 service side · 🟡 driver side written (format list from `IOCTL_OA2DP_AUDIO_SET_FORMATS`, float32 preferred), builds in CI, not yet run |
 | F4.3 | Dynamic sample-rate switching: when the endpoint format changes (e.g. exclusive-mode player at 96 kHz) the stream is suspended, reconfigured (AVDTP RECONFIGURE) and restarted, avoiding resampling. | ✅ protocol · 🟡 integration |
 | F4.4 | Accurate latency reporting to Windows, including AVDTP Delay Reporting from the headset (for lip-sync). | ✅ protocol · 🟡 integration |
 | F4.5 | Headset-initiated connections (headset connects to the PC) as well as PC-initiated ones. | 🟡 |
