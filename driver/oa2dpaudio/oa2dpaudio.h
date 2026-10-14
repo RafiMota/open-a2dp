@@ -16,13 +16,6 @@
 extern "C" {
 #endif
 
-/* COM pointers are opaque to the C parts (ring.c, control.cpp). */
-#ifdef __cplusplus
-#define OA2DP_UNKNOWN PUNKNOWN
-#else
-#define OA2DP_UNKNOWN PVOID
-#endif
-
 #define OA2DP_AUDIO_TAG 'dA2O'
 
 /* KS subdevice names; must match the reference strings in oa2dpaudio.inf. */
@@ -82,8 +75,8 @@ typedef struct _OA2DP_AUDIO_DEVICE {
 
     /* KS filters (PortCls subdevices). */
     KEVENT FilterLock;          /* PASSIVE_LEVEL lock, used as a mutex */
-    OA2DP_UNKNOWN WavePort;
-    OA2DP_UNKNOWN TopoPort;
+    PVOID WavePort;             /* PUNKNOWN of the ports, referenced; */
+    PVOID TopoPort;             /* opaque outside adapter.cpp       */
     PVOID WaveMiniport;         /* CMiniportWaveRT *, referenced */
     volatile LONG Streams;      /* open WaveRT streams */
     BOOLEAN NameChanged;        /* re-register the filters when idle */

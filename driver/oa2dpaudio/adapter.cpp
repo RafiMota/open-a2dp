@@ -298,20 +298,24 @@ RemoveFilters
     PAGED_CODE();
 
     PUNREGISTERPHYSICALCONNECTION unregisterPhysicalConnection = NULL;
+    PUNKNOWN wavePort = static_cast<PUNKNOWN>(dev->WavePort);
+    PUNKNOWN topoPort = static_cast<PUNKNOWN>(dev->TopoPort);
 
-    if (dev->TopoPort && dev->WavePort &&
-        NT_SUCCESS(dev->TopoPort->QueryInterface(IID_IUnregisterPhysicalConnection,
-                                                 (PVOID *)&unregisterPhysicalConnection)))
+    if (topoPort && wavePort &&
+        NT_SUCCESS(topoPort->QueryInterface(IID_IUnregisterPhysicalConnection,
+                                            (PVOID *)&unregisterPhysicalConnection)))
     {
         (void)unregisterPhysicalConnection->UnregisterPhysicalConnection(
-            dev->Fdo, dev->WavePort, OA2DP_WAVE_PIN_BRIDGE, dev->TopoPort, OA2DP_TOPO_PIN_IN);
+            dev->Fdo, wavePort, OA2DP_WAVE_PIN_BRIDGE, topoPort, OA2DP_TOPO_PIN_IN);
         unregisterPhysicalConnection->Release();
     }
 
-    UnregisterSubdevice(dev, dev->WavePort);
-    UnregisterSubdevice(dev, dev->TopoPort);
-    SAFE_RELEASE(dev->WavePort);
-    SAFE_RELEASE(dev->TopoPort);
+    UnregisterSubdevice(dev, wavePort);
+    UnregisterSubdevice(dev, topoPort);
+    SAFE_RELEASE(wavePort);
+    SAFE_RELEASE(topoPort);
+    dev->WavePort = NULL;
+    dev->TopoPort = NULL;
     if (dev->WaveMiniport)
     {
         static_cast<CMiniportWaveRT *>(dev->WaveMiniport)->Release();
