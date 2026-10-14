@@ -1,0 +1,71 @@
+;
+; oa2dp.inf — OpenA2DP Bluetooth A2DP transport driver
+;
+; Matches the A2DP Audio Sink service node (UUID 0x110B) that BTHENUM
+; creates for every paired headset. Windows keeps its own (Microsoft-signed)
+; driver as the automatic choice; oa2dpctl.exe selects this driver for one
+; device at a time with DiInstallDevice, and restores Windows' driver the
+; same way.
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = Bluetooth
+ClassGuid   = {e0cbf06c-cd8b-4647-bb8a-263b43f0f974}
+Provider    = %ProviderName%
+CatalogFile = oa2dp.cat
+DriverVer   = 10/14/2026,0.1.0.0
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir = 13
+
+[SourceDisksNames]
+1 = %DiskName%
+
+[SourceDisksFiles]
+oa2dp.sys = 1
+
+[Manufacturer]
+%ProviderName% = OpenA2DP, NTamd64.10.0...17763, NTarm64.10.0...17763
+
+[OpenA2DP.NTamd64.10.0...17763]
+%DeviceDesc% = Oa2dp_Install, BTHENUM\{0000110b-0000-1000-8000-00805f9b34fb}
+
+[OpenA2DP.NTarm64.10.0...17763]
+%DeviceDesc% = Oa2dp_Install, BTHENUM\{0000110b-0000-1000-8000-00805f9b34fb}
+
+[Oa2dp_Install.NT]
+CopyFiles = Oa2dp_CopyFiles
+
+[Oa2dp_CopyFiles]
+oa2dp.sys
+
+[Oa2dp_Install.NT.HW]
+AddReg = Oa2dp_HW_AddReg
+
+[Oa2dp_HW_AddReg]
+; Same security as the device object SDDL in driver.c
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GA;;;BA)"
+
+[Oa2dp_Install.NT.Services]
+AddService = oa2dp, 0x00000002, Oa2dp_Service
+
+[Oa2dp_Service]
+DisplayName   = %ServiceDesc%
+ServiceType   = 1               ; SERVICE_KERNEL_DRIVER
+StartType     = 3               ; SERVICE_DEMAND_START
+ErrorControl  = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary = %13%\oa2dp.sys
+
+[Oa2dp_Install.NT.Wdf]
+KmdfService = oa2dp, Oa2dp_WdfSection
+
+[Oa2dp_WdfSection]
+KmdfLibraryVersion = 1.15
+
+[Strings]
+ProviderName = "OpenA2DP Project"
+DiskName     = "OpenA2DP Installation Disk"
+DeviceDesc   = "OpenA2DP Bluetooth Audio Transport"
+ServiceDesc  = "OpenA2DP Bluetooth A2DP Transport"

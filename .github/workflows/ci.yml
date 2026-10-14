@@ -1,0 +1,73 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test the portable core (with sanitizers)
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          cmake --build build
+          ctest --test-dir build --output-on-failure
+
+  windows-user-mode:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.2
+      - name: Fetch codec libraries
+        shell: bash
+        run: sh scripts/fetch-deps.sh
+      - name: Build service, tool and run encoder tests
+        shell: bash
+        run: ZIG=zig sh scripts/zig-build.sh
+
+  # Kernel drivers with MSVC + WDK (both preinstalled on the windows-2022
+  # image). Produces unsigned oa2dp.sys / oa2dpaudio.sys + INFs as an artifact.
+  drivers:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch FindWDK
+        shell: bash
+        run: git clone --depth 1 https://github.com/SergiusTheBest/FindWDK.git third_party/FindWDK
+      - name: Show installed WDK
+        shell: pwsh
+        run: |
+          Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\Include\*\km\ntddk.h" |
+            ForEach-Object { $_.FullName }
+      - name: Configure
+        run: cmake -S . -B build/drv -G "Visual Studio 17 2022" -A x64 -DOA2DP_BUILD_DRIVERS=ON -DOA2DP_BUILD_TESTS=OFF
+      - name: Build oa2dp.sys
+        run: cmake --build build/drv --config Release --target oa2dp -- /m /v:minimal
+      - name: Build oa2dpaudio.sys
+        if: success() || failure()
+        run: cmake --build build/drv --config Release --target oa2dpaudio -- /m /v:minimal
+      - name: Check INFs
+        if: success() || failure()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $iv = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\Tools\*\x64\infverif.exe" -ErrorAction SilentlyContinue |
+            Sort-Object FullName | Select-Object -Last 1
+          if (-not $iv) { $iv = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x86\infverif.exe" | Sort-Object FullName | Select-Object -Last 1 }
+          & $iv.FullName /w driver\oa2dp\oa2dp.inf driver\oa2dpaudio\oa2dpaudio.inf
+      - name: Collect
+        if: success() || failure()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force out/drivers | Out-Null
+          Get-ChildItem build/drv/Release -Include *.sys,*.pdb -Recurse -ErrorAction SilentlyContinue |
+            Copy-Item -Destination out/drivers
+          Copy-Item driver/oa2dp/oa2dp.inf, driver/oa2dpaudio/oa2dpaudio.inf out/drivers
+      - uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: drivers-x64
+          path: out/drivers

@@ -1,0 +1,5 @@
+/build/
+/out/
+/third_party/
+*.user
+.vs/

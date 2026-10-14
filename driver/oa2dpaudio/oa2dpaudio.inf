@@ -1,0 +1,121 @@
+;
+; oa2dpaudio.inf — OpenA2DP virtual render endpoint
+;
+; Matches the child device OA2DP\Render\<address> that oa2dp.sys creates
+; for each headset it serves, and shows it to Windows as a "Headphones"
+; render endpoint. The KS interface layout (wave + topology filter, proxy
+; CLSID, endpoint properties) follows Microsoft's SYSVAD sample.
+;
+; Requires Windows 10 2004 (10.0.19041) or later (ExAllocatePool2).
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = MEDIA
+ClassGuid   = {4d36e96c-e325-11ce-bfc1-08002be10318}
+Provider    = %ProviderName%
+CatalogFile = oa2dpaudio.cat
+DriverVer   = 10/14/2026,0.1.0.0
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir = 13
+
+[SourceDisksNames]
+1 = %DiskName%
+
+[SourceDisksFiles]
+oa2dpaudio.sys = 1
+
+[Manufacturer]
+%ProviderName% = OpenA2DP, NTamd64.10.0...19041, NTarm64.10.0...19041
+
+[OpenA2DP.NTamd64.10.0...19041]
+%DeviceDesc% = Oa2dpAudio_Install, OA2DP\Render
+
+[OpenA2DP.NTarm64.10.0...19041]
+%DeviceDesc% = Oa2dpAudio_Install, OA2DP\Render
+
+[Oa2dpAudio_Install.NT]
+Include   = ks.inf, wdmaudio.inf
+Needs     = KS.Registration, WDMAUDIO.Registration
+CopyFiles = Oa2dpAudio_CopyFiles
+AddReg    = Oa2dpAudio_AddReg
+
+[Oa2dpAudio_CopyFiles]
+oa2dpaudio.sys
+
+[Oa2dpAudio_AddReg]
+HKR,,AssociatedFilters,,"wdmaud,swmidi,redbook"
+HKR,,Driver,,oa2dpaudio.sys
+HKR,Drivers,SubClasses,,"wave,mixer"
+HKR,Drivers\wave\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\mixer\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\wave\wdmaud.drv,Description,,%DeviceDesc%
+HKR,Drivers\mixer\wdmaud.drv,Description,,%DeviceDesc%
+
+; Reference strings must match OA2DP_WAVE_NAME / OA2DP_TOPO_NAME in oa2dpaudio.h.
+[Oa2dpAudio_Install.NT.Interfaces]
+AddInterface = %KSCATEGORY_AUDIO%,    %KSNAME_Wave%,     Oa2dpAudio.I.Wave
+AddInterface = %KSCATEGORY_RENDER%,   %KSNAME_Wave%,     Oa2dpAudio.I.Wave
+AddInterface = %KSCATEGORY_REALTIME%, %KSNAME_Wave%,     Oa2dpAudio.I.Wave
+AddInterface = %KSCATEGORY_AUDIO%,    %KSNAME_Topology%, Oa2dpAudio.I.Topology
+AddInterface = %KSCATEGORY_TOPOLOGY%, %KSNAME_Topology%, Oa2dpAudio.I.Topology
+
+[Oa2dpAudio.I.Wave]
+AddReg = Oa2dpAudio.I.Wave.AddReg
+
+[Oa2dpAudio.I.Wave.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%WaveName%
+
+[Oa2dpAudio.I.Topology]
+AddReg = Oa2dpAudio.I.Topology.AddReg
+
+[Oa2dpAudio.I.Topology.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%TopologyName%
+HKR,EP\0,%PKEY_AudioEndpoint_Association%,,%KSNODETYPE_ANY%
+HKR,EP\0,%PKEY_AudioEndpoint_Supports_EventDriven_Mode%,0x00010001,0x1
+
+[Oa2dpAudio_Install.NT.Services]
+AddService = oa2dpaudio, 0x00000002, Oa2dpAudio_Service
+
+[Oa2dpAudio_Service]
+DisplayName   = %ServiceDesc%
+ServiceType   = 1               ; SERVICE_KERNEL_DRIVER
+StartType     = 3               ; SERVICE_DEMAND_START
+ErrorControl  = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary = %13%\oa2dpaudio.sys
+
+[Oa2dpAudio_Install.NT.HW]
+AddReg = Oa2dpAudio_HW_AddReg
+
+[Oa2dpAudio_HW_AddReg]
+; Standard audio device ACL: the audio engine (LOCAL SERVICE) and apps must
+; open the KS filters. The control interface for oa2dpsvc.exe shares this
+; device object and admits only SYSTEM and administrators itself
+; (control.cpp, same rule as oa2dp.sys's SDDL).
+HKR,,DeviceType,0x10001,0x0000001D
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GRGWGX;;;BA)(A;;GRGWGX;;;WD)(A;;GRGWGX;;;RC)"
+
+[Strings]
+ProviderName = "OpenA2DP Project"
+DiskName     = "OpenA2DP Installation Disk"
+DeviceDesc   = "OpenA2DP Bluetooth Headphones"
+ServiceDesc  = "OpenA2DP Audio Endpoint"
+WaveName     = "OpenA2DP Wave"
+TopologyName = "OpenA2DP Topology"
+
+KSNAME_Wave     = "WaveOa2dp"
+KSNAME_Topology = "TopologyOa2dp"
+
+Proxy.CLSID         = "{17CCA71B-ECD7-11D0-B908-00A0C9223196}"
+KSCATEGORY_AUDIO    = "{6994AD04-93EF-11D0-A3CC-00A0C9223196}"
+KSCATEGORY_RENDER   = "{65E8773E-8F56-11D0-A3B9-00A0C9223196}"
+KSCATEGORY_REALTIME = "{EB115FFC-10C8-4964-831D-6DCB02E6F23F}"
+KSCATEGORY_TOPOLOGY = "{DDA54A40-1E4C-11D1-A050-405705C10000}"
+KSNODETYPE_ANY      = "{00000000-0000-0000-0000-000000000000}"
+
+PKEY_AudioEndpoint_Association               = "{1DA5D803-D492-4EDD-8C23-E0C0FFEE7F0E},2"
+PKEY_AudioEndpoint_Supports_EventDriven_Mode = "{1DA5D803-D492-4EDD-8C23-E0C0FFEE7F0E},7"
